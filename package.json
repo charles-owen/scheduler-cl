@@ -1,0 +1,17 @@
+{
+  "name": "scheduler-cl",
+  "version": "0.0.1",
+  "description": "CourseLib Website scheduler components",
+  "main": "index.js",
+  "keywords": [
+    "Education",
+    "Course Web Sites"
+  ],
+  "author": "Charles B. Owen",
+  "license": "MIT",
+  "devDependencies": {
+  },
+  "dependencies": {
+    "course-cl": ">=0.0.1"
+  }
+}
