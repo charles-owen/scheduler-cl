@@ -165,6 +165,7 @@ SQL;
 
 	/** Update a schedule record
 	 * @param Slot $slot Slot to update (from record)
+	 * @param int $time Current time
 	 * @return true if successful, false otherwise
 	 */
 	public function update(Slot $slot, $time) {
@@ -230,11 +231,9 @@ SQL;
 	}
 
 	/**
-	 * Does a team have a future booking already?
-	 * @param $scheduleId
-	 * @param $teamId
-	 * @param $time
-	 * @return bool
+	 * Does a slot have a future booking already?
+	 * @param int $slotId
+	 * @return bool True if booked
 	 */
 	public function slotHasBooking($slotId) {
 		$pdo = $this->pdo();
@@ -273,7 +272,14 @@ SQL;
 	}
 
 
-
+	/**
+	 * Book a time slot
+	 * @param int $id Internal id for the slot
+	 * @param User $user User doing the booking
+	 * @param int $time Current time
+	 * @param int $teamId Team ID or null if individual booking
+	 * @return bool true if successful
+	 */
 	public function book($id, $user, $time, $teamId=null) {
 		$pdo = $this->pdo();
 
@@ -293,7 +299,12 @@ SQL;
 	}
 
 
-
+	/**
+	 * Clear a time slot booking
+	 * @param int $id Internal id for the slot
+	 * @param int $time Current time
+	 * @return bool True if successful
+	 */
 	public function unbook($id, $time) {
 		$pdo = $this->pdo();
 

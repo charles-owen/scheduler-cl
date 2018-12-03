@@ -1,13 +1,13 @@
 <?php
 /**
  * @file
- * Representation of a single Schedule
+ * Representation of a single Schedule time slot.
  */
 
 namespace CL\Scheduler;
 
 /**
- * Representation of a single schedule slot
+ * Representation of a single schedule time slot
  *
  * @cond
  * @property int $id
@@ -21,7 +21,10 @@ namespace CL\Scheduler;
  * @endcond
  */
 class Slot {
-
+	/**
+	 * Slot constructor.
+	 * @param array|null $row Database row that represents the slot.
+	 */
 	public function __construct(array $row = null) {
 		if($row !== null) {
 			$this->id = +$row['id'];
@@ -141,6 +144,10 @@ class Slot {
 		}
 	}
 
+	/**
+	 * Return slot data in a form suitable for transmission to runtime.
+	 * @return array Data
+	 */
 	public function data() {
 		return [
 			'id'=>$this->id,
