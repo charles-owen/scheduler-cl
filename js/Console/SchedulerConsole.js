@@ -1,6 +1,5 @@
-import {Member} from "course-cl";
+import {Member} from "course-cl/js/Members/Member";
 import SchedulesEditorVue from './SchedulesEditor.vue';
-//import TeamsEditorVue from './TeamsEditor.vue';
 
 /**
  * @file
@@ -30,10 +29,6 @@ SchedulerConsole.setup = function(Console) {
 			{route: '/schedules', component: SchedulesEditorVue}
 		]
 	});
-
-	// Console.components.addRoutes([
-	// 	{route: '/team/:id', component: TeamsEditorVue, props: true}
-	// ]);
 
 }
 
