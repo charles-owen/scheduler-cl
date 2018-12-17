@@ -44,8 +44,8 @@ class SchedulerPlugin extends \CL\Site\Plugin {
 	 * @param Site $site The site configuration component
 	 */
 	public function ensureTables(Site $site) {
-//		$maker = new TeamTables($site->db);
-//		$maker->create(false);
+		$maker = new SchedulerTables($site->db);
+		$maker->create(false);
 	}
 
 	/**
