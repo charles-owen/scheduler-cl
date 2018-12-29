@@ -12,7 +12,7 @@ export let SchedulerConsole = function() {
 SchedulerConsole.setup = function(Console) {
     Console.tables.add({
         title: 'Scheduler',
-        order: 22,
+        order: 100,
         api: '/api/scheduler/tables'
     });
 
