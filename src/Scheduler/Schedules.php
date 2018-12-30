@@ -73,6 +73,7 @@ SQL;
 	/** Get a schedule for a section.
 	 * @param string $semester The semester code, like FS18
 	 * @param string $sectionId The id for the section (like 001)
+	 * @param string $tag Schedule tag
 	 * @return Schedule object or null
 	 */
 	public function get($semester, $sectionId, $tag) {
@@ -96,8 +97,7 @@ SQL;
 	}
 
 	/** Get a schedule for a section.
-	 * @param string $semester The semester code, like FS18
-	 * @param string $sectionId The id for the section (like 001)
+	 * @param int $scheduleId The internal schedule id
 	 * @return Schedule object or null
 	 */
 	public function getById($scheduleId) {

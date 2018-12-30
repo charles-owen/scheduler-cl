@@ -20,6 +20,10 @@ namespace CL\Scheduler;
  */
 class Schedule {
 
+	/**
+	 * Schedule constructor.
+	 * @param array|null $row Database row
+	 */
 	public function __construct(array $row = null) {
 		if($row !== null) {
 			$this->id = +$row['id'];
@@ -119,6 +123,10 @@ class Schedule {
 		}
 	}
 
+	/**
+	 * Create array of data suitable for sending to client.
+	 * @return array Data
+	 */
 	public function data() {
 		return [
 			'id'=>$this->id,
