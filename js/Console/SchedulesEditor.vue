@@ -26,10 +26,12 @@
 </template>
 
 <script>
-  import ConsoleComponentBase from 'console-cl/js/ConsoleComponentBase.vue';
-	import Dialog from 'dialog-cl';
+  import Dialog from 'dialog-cl';
   import {Schedule} from '../Schedule';
   import ScheduleEditorVue from './ScheduleEditor.vue';
+
+  const ConsoleComponentBase = Site.ConsoleComponentBase;
+
 
   export default {
   	extends: ConsoleComponentBase,
