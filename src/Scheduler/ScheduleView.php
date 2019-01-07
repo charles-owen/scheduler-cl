@@ -21,6 +21,7 @@ class ScheduleView extends View {
 	 * ScheduleView constructor.
 	 * @param Site $site The Site object
 	 * @param Server $server The Server object
+	 * @param array $properties Properties pass from the router
 	 */
 	public function __construct(Site $site, Server $server, array $properties) {
 		parent::__construct($site, ['at-least'=>Member::STUDENT]);
