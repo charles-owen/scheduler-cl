@@ -1,37 +1,41 @@
 <template>
   <div class="content cl-schedule-view">
-    <div v-for="day of days"><h2>{{day.day}} <span class="cl-info">{{day.slots.length}} slots/{{day.slots.length - ownedForDay(day)}} open</span></h2>
-      <table>
-        <tr v-for="slot of day.slots" :class="slot.booked() ? (owned(slot) ? 'booked owned' : 'booked') : ''">
-          <td>{{timeFormat(slot.time)}}<template v-if="staff"><br>
-            <a @click.prevent="editer(slot)"><img :src="root + '/vendor/cl/site/img/pencil16.png'" alt="Edit" title="Edit"></a><br>
-            <a @click.prevent="deleter(slot)"><img :src="root + '/vendor/cl/site/img/x.png'" alt="Delete" title="Delete"></a>
-            </template>
-          </td>
-          <td><span v-if="slot.booked()" class="booked">{{slot.teamName}}</span>
-            <a v-if="!slot.booked() && slot.time > time" @click.prevent="book(slot)">Click to Book</a>
-            <span class="location">{{slot.location}}</span>
-            <span v-if="slot.booked() && (staff || (owned(slot) && slot.time > time))" class="unbook"><a @click.prevent="unbook(slot)"><img :src="root + '/vendor/cl/site/img/x.png'" alt="Unbook" title="Unbook"></a>
-            </span>
-          </td>
-        </tr>
+    <div class="time">{{timeStr}}</div>
+    <div class="full" v-for="day of days"><h2><input type="checkbox" v-model="day.open"> {{day.day}} <span class="cl-info">{{day.slots.length}} slots/{{day.slots.length - ownedForDay(day)}} open</span></h2>
+      <table v-if="day.open">
+        <template v-for="slot of day.slots">
+          <tr v-if="!slot.contiguous" class="gap"><td>&nbsp</td><td>&nbsp;</td></tr>
+          <tr :class="slotClass(slot)">
+            <td><span class="time">{{timeFormat(slot.time)}}</span><template v-if="staff"><br>
+              <a @click.prevent="editor(slot)"><img :src="root + '/vendor/cl/site/img/pencil16.png'" alt="Edit" title="Edit"></a><br>
+              <a @click.prevent="deleter(slot)"><img :src="root + '/vendor/cl/site/img/x.png'" alt="Delete" title="Delete"></a>
+              </template>
+            </td>
+            <td><span v-if="!staff && slot.booked()" class="booked">{{slot.teamName}}</span>
+              <span v-if="staff && slot.booked()" class="booked"><a @click.prevent="showTeam(slot)">{{slot.teamName}}</a></span>
+              <a v-if="!slot.booked() && slot.time > time" @click.prevent="book(slot)">Click to Book</a>
+              <span class="location">{{slot.location}}</span>
+              <span v-if="staff && slot.booked()" class="counter">{{slot.count}}</span>
+              <span v-if="slot.booked() && (staff || (owned(slot) && slot.time > time))" class="unbook"><a @click.prevent="unbook(slot)"><img :src="root + '/vendor/cl/site/img/x.png'" alt="Unbook" title="Unbook"></a>
+              </span>
+            </td>
+          </tr>
+        </template>
       </table>
     </div>
   </div>
 </template>
 
 <script>
-  import Dialog from 'dialog-cl';
-  import {Member} from 'course-cl/js/Members/Member';
   import {Schedule} from './Schedule';
   import {Slot} from './Slot';
-  import UserVueBase from 'users-cl/js/Vue/UserVueBase.vue';
   import SlotEditorVue from './SlotEditor.vue';
-  import {TimeFormatter} from 'site-cl/js/TimeFormatter';
-  import {StickyNav} from 'site-cl/js/Util/StickyNav';
+  import TeamViewerVue from './TeamViewer.vue';
+
+  const Member = Site.Member;
 
   export default {
-    'extends': UserVueBase,
+    'extends': Site.UserVueBase,
     props: ['json'],
     data: function () {
       return {
@@ -42,11 +46,14 @@
         staff: false,
         latest: 0,
         time: 0,
+        timeStr: '',
         timer: 0
       }
     },
     mounted() {
-      new StickyNav('nav.cl-nav');
+      // Make the navigation bar sticky.
+      new this.$site.StickyNav('nav.cl-nav');
+
       this.clearMenu();
       this.schedule = new Schedule(this.json.schedule);
       this.setTime();
@@ -113,6 +120,7 @@
       },
       setTime() {
         this.time = Math.round((new Date()).getTime() / 1000);
+        this.timeStr = this.$site.TimeFormatter.absoluteUNIX(this.time, 'long-time');
       },
       book(slot) {
         let params = {id: slot.id, teamMode: this.teamMode ? 1 : 0};
@@ -160,41 +168,66 @@
         //
         this.days = [];
 
+        const teamCounter = {};
+
         let lastDay = null;
         let daySlots = [];
         for (let slotData of slots) {
           let slot = new Slot(slotData);
+          if(slot.teamId !== null) {
+            if(teamCounter[slot.teamId] === undefined) {
+              slot.count = 1;
+              teamCounter[slot.teamId] = 1;
+            } else {
+              teamCounter[slot.teamId]++;
+              slot.count = teamCounter[slot.teamId];
+            }
+          }
+
           if (slot.updated > this.latest) {
             this.latest = slot.updated;
           }
 
-          let day = TimeFormatter.absoluteUNIX(slot.time, 'long-date');
+          let day = this.$site.TimeFormatter.absoluteUNIX(slot.time, 'long-date');
           if (day !== lastDay) {
             // We have a new day
             if (daySlots.length > 0) {
-              this.days.push({
-                day: lastDay,
-                slots: daySlots
-              });
+              this.addDay(lastDay, daySlots);
             }
             lastDay = day;
             daySlots = [];
           }
 
+          // Determine if this slot is contiguous with the last one
+          if(daySlots.length > 0) {
+            const prev = daySlots[daySlots.length - 1];
+            if(prev.time + prev.duration * 60 >= slot.time) {
+              slot.contiguous = true;
+            }
+          }
           daySlots.push(slot);
         }
 
         if (daySlots.length > 0) {
-          this.days.push({
-            day: lastDay,
-            slots: daySlots
-          });
+          this.addDay(lastDay, daySlots);
         }
+      },
+      addDay(day, daySlots) {
+        // Days in the past should not be open
+        const now = Math.round(new Date().getTime()/1000);
+        const nowDay = this.$site.TimeFormatter.absoluteUNIX(now, 'long-date');
+        const open = Date.parse(day) >= Date.parse(nowDay);
+
+        this.days.push({
+          day: day,
+          open: open,
+          slots: daySlots
+        });
       },
       add() {
         const slot = new Slot();
 
-        new Dialog({
+        new this.$site.Dialog({
           title: 'New Slot',
           content: '<div id="cl-schedule-slot"></div>',
           addClass: 'cl-schedule-dialog',
@@ -204,8 +237,8 @@
               focus: true,
               click: (dialog) => {
                 if (slot.time === '' || slot.time === 0) {
-                  new Dialog.MessageBox('Must enter time', 'You must provide a date and time',
-                          Dialog.MessageBox.OK);
+                  new this.$site.Dialog.MessageBox('Must enter time', 'You must provide a date and time',
+                          this.$site.Dialog.MessageBox.OK);
                   return;
                 }
 
@@ -243,10 +276,10 @@
 
         this.dialogVue(slot);
       },
-      editer(slot) {
+      editor(slot) {
         slot = slot.clone();
 
-        new Dialog({
+        new this.$site.Dialog({
           title: 'Edit Slot',
           content: '<div id="cl-schedule-slot"></div>',
           addClass: 'cl-schedule-dialog',
@@ -256,8 +289,8 @@
               focus: true,
               click: (dialog) => {
                 if (slot.time === '' || slot.time === 0) {
-                  new Dialog.MessageBox('Must enter time', 'You must provide a date and time',
-                          Dialog.MessageBox.OK);
+                  new this.$site.Dialog.MessageBox('Must enter time', 'You must provide a date and time',
+                          this.$site.Dialog.MessageBox.OK);
                   return;
                 }
 
@@ -314,8 +347,8 @@
         })
       },
       deleter(slot) {
-        new Dialog.MessageBox('Are you sure?', 'Are you sure you want to delete?',
-                Dialog.MessageBox.OKCANCEL, () => {
+        new this.$site.Dialog.MessageBox('Are you sure?', 'Are you sure you want to delete?',
+                this.$site.Dialog.MessageBox.OKCANCEL, () => {
                   this.$site.api.post('/api/scheduler/slots/' + this.schedule.id + '/delete', {id: slot.id})
                           .then((response) => {
                             if (!response.hasError()) {
@@ -331,8 +364,46 @@
                           });
                 });
       },
+      slotClass(slot) {
+        return slot.booked() ? (this.owned(slot) ? 'booked owned' : 'booked') : '';
+      },
+      showTeam(slot) {
+        const Dialog = this.$site.Dialog;
+
+        new Dialog({
+          title: 'Team',
+          content: '<div id="cl-schedule-team"></div>',
+          addClass: 'cl-dialog-narrow',
+          buttons: [
+            {
+              contents: 'Ok',
+              click: (dialog) => {
+                dialog.close();
+              }
+            }
+          ]
+
+        });
+
+        const schedule = this.schedule;
+
+        new this.$site.Vue({
+          el: '#cl-schedule-team',
+          data: function () {
+            return {
+              slot: slot,
+              schedule: schedule
+            }
+          },
+          template: `<viewer :view-slot="slot" :schedule="schedule"></viewer>`,
+          components: {
+            viewer: TeamViewerVue
+          }
+        })
+
+      },
       timeFormat(time) {
-        return TimeFormatter.absoluteUNIX(time, 'short-time');
+        return this.$site.TimeFormatter.absoluteUNIX(time, 'short-time');
       }
     }
   }
@@ -345,6 +416,12 @@
   }
 
   div.cl-schedule-view {
+    div.time {
+      text-align: center;
+      margin: 0 0 0 85px;
+      font-size: 3em;
+    }
+
     h2 {
       border: 0;
       text-align: center;
@@ -365,7 +442,7 @@
         text-align: right;
         vertical-align: top;
         border: 0;
-        font-size: 0.85em;
+        font-size: 1em;
         padding-right: 3px;
       }
 
@@ -390,7 +467,7 @@
           font-size: 0.9em;
         }
         
-        a {
+        >a {
           text-decoration: none;
           position: absolute;
           top: 0;
@@ -422,32 +499,69 @@
             top: 0;
             left: 0;
             width: 100%;
-            padding: 0.25em 0 0 0;
+            height: 2.0em;
+            padding: 0.25em 32px 0 0;
             text-align: center;
             font-style: normal;
             font-weight: bold;
-            font-size: 1.5em;
+            font-size: 1.4em;
             color: black;
+            overflow: hidden;
+
+            a, a:link, a:visited {
+              color: black;
+              text-decoration: none;
+            }
+
+            a:hover {
+              color: #ff0000;
+            }
           }
 
           span.unbook {
             position: absolute;
             right: 2px;
-            top: -3px;
-            width: 16px;
-            height: 16px;
+            top: 2px;
+            width: 32px;
+            height: 32px;
             padding: 0;
 
             a {
               padding: 0;
             }
+
+            img {
+              width: 32px;
+              height: 32px;
+            }
           }
+        }
+
+        span.counter {
+          position: absolute;
+          right: 2px;
+          bottom: 0;
+
         }
       }
 
       tr.owned {
         td:nth-child(2) {
           background-color: #faa;
+        }
+      }
+
+      tr.gap {
+
+        td {
+          height: 10px;
+          padding: 0;
+          border: 0;
+          line-height: 0;
+        }
+
+        td:nth-child(2) {
+          border-top: 1px solid black;
         }
       }
     }

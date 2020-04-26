@@ -9,11 +9,13 @@ export const Schedule = function(data) {
 		this.tag = data.tag;
 		this.name = data.name;
 		this.teaming = data.teaming;
+		this.assigntag = data.assigntag === null ? 'none' : data.assigntag;
 	} else {
 		this.id = 0;
 		this.tag = '';
 		this.name = '';
 		this.teaming = 0;
+		this.assigntag = 'none';
 	}
 
 	this.clone = function() {

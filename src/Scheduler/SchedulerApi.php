@@ -187,6 +187,7 @@ class SchedulerApi extends \CL\Users\Api\Resource {
 					$schedule->teamingId = +$post['teaming'] !== 0 ? +$post['teaming'] : 0;
 					$schedule->semester = $user->member->semester;
 					$schedule->sectionId = $user->member->sectionId;
+					$schedule->assignTag = isset($post['assigntag']) ? strip_tags($post['assigntag']) : null;
 
 					$schedules->add($schedule);
 					break;
@@ -201,6 +202,7 @@ class SchedulerApi extends \CL\Users\Api\Resource {
 					$schedule->teamingId = +$post['teaming'] !== 0 ? +$post['teaming'] : 0;
 					$schedule->semester = $user->member->semester;
 					$schedule->sectionId = $user->member->sectionId;
+                    $schedule->assignTag = isset($post['assigntag']) ? strip_tags($post['assigntag']) : null;
 
 					$schedules->update($schedule);
 					break;

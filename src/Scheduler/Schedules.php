@@ -30,12 +30,13 @@ class Schedules extends \CL\Tables\Table {
 
 		$query = <<<SQL
 CREATE TABLE IF NOT EXISTS `$this->tablename` (
-  id        int(11) NOT NULL AUTO_INCREMENT, 
-  `tag`     varchar(32) NOT NULL, 
-  name      varchar(100) NOT NULL, 
-  teamingid int(11), 
-  semester  char(4) NOT NULL, 
-  section   char(4) NOT NULL, 
+  id         int(11) NOT NULL AUTO_INCREMENT, 
+  `tag`      varchar(32) NOT NULL, 
+  name       varchar(100) NOT NULL, 
+  teamingid  int(11), 
+  semester   char(4) NOT NULL, 
+  section    char(4) NOT NULL, 
+  assigntag varchar(30), 
   PRIMARY KEY (id), 
   INDEX (`tag`));
 
@@ -128,8 +129,8 @@ SQL;
 		$pdo = $this->pdo();
 
 		$sql = <<<SQL
-insert into $this->tablename(tag, name, semester, section, teamingid)
-values(?, ?, ?, ?, ?);
+insert into $this->tablename(tag, name, semester, section, teamingid, assigntag)
+values(?, ?, ?, ?, ?, ?);
 SQL;
 
 		//echo $this->sub_sql($sql, array($tag, $name, $semester, $sectionid));
@@ -137,7 +138,7 @@ SQL;
 		try {
 			$stmt = $pdo->prepare($sql);
 			$stmt->execute([$schedule->tag, $schedule->name, $schedule->semester, $schedule->sectionId,
-				$schedule->teamingId]);
+				$schedule->teamingId, $schedule->assignTag]);
 			$schedule->id = $pdo->lastInsertId();
 			return $schedule->id;
 		} catch(\PDOException $e) {
@@ -145,7 +146,8 @@ SQL;
 		}
 	}
 
-	/** Update a schedule record
+	/**
+     * Update a schedule record
 	 * @param Schedule $schedule Schedule to update (from record)
 	 * @return true if successful, false otherwise
 	 */
@@ -154,13 +156,13 @@ SQL;
 
 		$sql = <<<SQL
 update $this->tablename
-set tag=?, name=?, teamingid=?
+set tag=?, name=?, teamingid=?, assigntag=?
 where id=?
 SQL;
 
 		try {
 			$stmt = $pdo->prepare($sql);
-			$stmt->execute([$schedule->tag, $schedule->name, $schedule->teamingId, $schedule->id]);
+			$stmt->execute([$schedule->tag, $schedule->name, $schedule->teamingId, $schedule->assignTag, $schedule->id]);
 			return true;
 		} catch(\PDOException $e) {
 			return false;

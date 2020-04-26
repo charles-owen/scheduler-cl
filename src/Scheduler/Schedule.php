@@ -16,6 +16,7 @@ namespace CL\Scheduler;
  * @property string $tag
  * @property string $name
  * @property int $teamingId
+ * @property string $assignTag Optional assignment tag
  * @endcond
  */
 class Schedule {
@@ -32,6 +33,7 @@ class Schedule {
 			$this->semester = $row['semester'];
 			$this->sectionId = $row['section'];
 			$this->teamingId = $row['teamingid'];
+			$this->assignTag = $row['assigntag'];
 		}
 	}
 
@@ -64,6 +66,9 @@ class Schedule {
 
 			case 'teamingId':
 				return $this->teamingId;
+
+            case 'assignTag':
+                return $this->assignTag;
 
 			default:
 				$trace = debug_backtrace();
@@ -112,6 +117,10 @@ class Schedule {
 				$this->teamingId = $value;
 				break;
 
+            case 'assignTag':
+                $this->assignTag = $value;
+                break;
+
 			default:
 				$trace = debug_backtrace();
 				trigger_error(
@@ -134,7 +143,8 @@ class Schedule {
 			'name'=>$this->name,
 			'semester'=>$this->semester,
 			'section'=>$this->sectionId,
-			'teaming'=>$this->teamingId];
+			'teaming'=>$this->teamingId,
+            'assigntag'=>$this->assignTag];
 	}
 
 	private $id=0;    // Internal team ID
@@ -143,4 +153,5 @@ class Schedule {
 	private $semester = null;  // Semester, like 'FS18'
 	private $sectionId = null; // SectionID, like '003'
 	private $teamingId = true;    // Is this team visible to user
+    private $assignTag = null;  // Assignment tag
 }

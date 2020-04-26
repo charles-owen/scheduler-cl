@@ -1,5 +1,8 @@
-
-
+/**
+ * Represents a single slot in the schedule.
+ * @param data Optional data to load into the object.
+ * @constructor
+ */
 export const Slot = function(data) {
 	if(data !== undefined) {
 		this.id = data.id;
@@ -23,7 +26,11 @@ export const Slot = function(data) {
 		this.memberId = null;
 	}
 
+	// Does this slot repeat?
 	this.repeat = 1;
+
+	// Is this slot contiguous with the previous slot?
+	this.contiguous = false;
 
 	this.clone = function() {
 		return new Slot(this);

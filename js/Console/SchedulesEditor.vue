@@ -9,7 +9,7 @@
           <th v-if="teamings !== null">Teaming</th>
         </tr>
         <tr v-for="schedule in schedules" :key="schedule.id">
-          <td><a @click.prevent="editer(schedule)"><img :src="root + '/vendor/cl/site/img/pencil16.png'" alt="Edit" title="Edit"></a>
+          <td><a @click.prevent="editor(schedule)"><img :src="root + '/vendor/cl/site/img/pencil16.png'" alt="Edit" title="Edit"></a>
             <a @click.prevent="deleter(schedule)"><img :src="root + '/vendor/cl/site/img/x.png'" alt="Delete" title="Delete"></a>
           </td>
           <td><a :href="root + '/cl/schedule/' + schedule.tag">{{schedule.tag}}</a></td>
@@ -26,212 +26,238 @@
 </template>
 
 <script>
-  import Dialog from 'dialog-cl';
   import {Schedule} from '../Schedule';
   import ScheduleEditorVue from './ScheduleEditor.vue';
 
-  const ConsoleComponentBase = Site.ConsoleComponentBase;
-
-
   export default {
-  	extends: ConsoleComponentBase,
-  	data: function() {
-  		return {
-  		  teamings: null,
+    extends: Site.ConsoleComponentBase,
+    data: function () {
+      return {
+        teamings: null,
         schedules: null
       }
     },
-  	mounted() {
-  		this.setTitle(': Schedules');
-	    this.addNav2('Add Schedule', 5, () => {
-		    this.add();
-	    });
+    mounted() {
+      this.setTitle(': Schedules');
+      this.addNav2('Add Schedule', 5, () => {
+        this.add();
+      });
 
-	    this.$site.api.get('/api/scheduler/schedules', {})
-	      .then((response) => {
-	        if (!response.hasError()) {
-            this.take(response);
-	        } else {
-	    	    this.$site.toast(this, response);
-	        }
-	      })
-	      .catch((error) => {
-	        this.$site.toast(this, error);
-	      });
+      this.$site.api.get('/api/scheduler/schedules', {})
+              .then((response) => {
+                if (!response.hasError()) {
+                  this.take(response);
+                } else {
+                  this.$site.toast(this, response);
+                }
+              })
+              .catch((error) => {
+                this.$site.toast(this, error);
+              });
     },
     methods: {
-  		teamingName(teamingid) {
-  			for(const teaming of this.teamings) {
-  				if(+teaming.id === +teamingid) {
-  					return teaming.name;
+      teamingName(teamingid) {
+        for (const teaming of this.teamings) {
+          if (+teaming.id === +teamingid) {
+            return teaming.name;
           }
         }
 
-  			return 'None';
+        return 'None';
       },
-  		take(response) {
+      take(response) {
         const data = response.getData('schedules').attributes;
 
         this.schedules = [];
-        for(let row of data) {
+
+        const teamCounter = {};
+
+        for (let row of data) {
           this.schedules.push(new Schedule(row));
         }
 
-		    const teamings = response.getData('teamings');
-        if(teamings !== null) {
+        const teamings = response.getData('teamings');
+        if (teamings !== null) {
           this.teamings = teamings.attributes;
         }
 
-	    },
-	    add() {
-		    const schedule = new Schedule();
+      },
+      add() {
+        const schedule = new Schedule();
+        const Dialog = this.$site.Dialog;
 
-		    new Dialog({
-			    title: 'New Schedule',
-			    content: '<div id="cl-schedule"></div>',
-          addClass: 'cl-dialog-narrow',
-			    buttons: [
-				    {
-					    contents: 'Add',
-					    focus: true,
-					    click: (dialog) => {
-					    	if(!this.$site.Tags.validate(schedule.tag)) {
-					    		return;
-                }
-
-						    if(schedule.name.trim() === '') {
-							    new Dialog.MessageBox('Must enter name', 'You must provide a non-empty name',
-								    Dialog.MessageBox.OK);
-							    return;
-						    }
-
-						    let params = {
-							    tag: schedule.tag.trim(),
-							    name: schedule.name.trim(),
-                  teaming: schedule.teaming
-						    }
-
-						    this.$site.api.post('/api/scheduler/schedules/new', params)
-							    .then((response) => {
-								    if (!response.hasError()) {
-									    this.take(response);
-									    dialog.close();
-								    } else {
-									    this.$site.toast(this, response);
-								    }
-
-							    })
-							    .catch((error) => {
-								    this.$site.toast(this, error);
-							    });
-
-					    }
-				    },
-				    {
-					    contents: 'Cancel',
-					    click: (dialog) => {
-						    dialog.close();
-					    }
-				    }
-			    ]
-
-		    });
-
-		    this.dialogVue(schedule);
-	    },
-	    editer(schedule) {
-		    schedule = schedule.clone();
-
-		    new Dialog({
-			    title: 'Edit Schedule',
-			    content: '<div id="cl-schedule"></div>',
-  		    addClass: 'cl-dialog-narrow',
-			    buttons: [
-				    {
-					    contents: 'Update',
-					    focus: true,
-					    click: (dialog) => {
-                if(!this.$site.Tags.validate(schedule.tag)) {
+        new Dialog({
+          title: 'New Schedule',
+          content: '<div id="cl-schedule"></div>',
+          buttons: [
+            {
+              contents: 'Add',
+              focus: true,
+              click: (dialog) => {
+                if (!this.$site.Tags.validate(schedule.tag)) {
                   return;
                 }
 
-						    if(schedule.name.trim() === '') {
-							    new Dialog.MessageBox('Must enter name', 'You must provide a non-empty name',
-								    Dialog.MessageBox.OK);
-							    return;
-						    }
+                if (schedule.name.trim() === '') {
+                  new Dialog.MessageBox('Must enter name', 'You must provide a non-empty name',
+                          Dialog.MessageBox.OK);
+                  return;
+                }
 
-						    let params = {
-							    id: schedule.id,
-							    tag: schedule.tag.trim(),
-							    name: schedule.name.trim(),
-				          teaming: schedule.teaming
-						    }
+                let params = {
+                  tag: schedule.tag.trim(),
+                  name: schedule.name.trim(),
+                  teaming: schedule.teaming,
+                  assigntag: schedule.assigntag !== 'none' ? schedule.assigntag : null
+                }
 
-						    this.$site.api.post('/api/scheduler/schedules/update', params)
-							    .then((response) => {
-								    if (!response.hasError()) {
-									    this.take(response);
-									    dialog.close();
-								    } else {
-									    this.$site.toast(this, response);
-								    }
+                this.$site.api.post('/api/scheduler/schedules/new', params)
+                        .then((response) => {
+                          if (!response.hasError()) {
+                            this.take(response);
+                            dialog.close();
+                          } else {
+                            this.$site.toast(this, response);
+                          }
 
-							    })
-							    .catch((error) => {
-								    this.$site.toast(this, error);
-							    });
+                        })
+                        .catch((error) => {
+                          this.$site.toast(this, error);
+                        });
 
-					    }
-				    },
-				    {
-					    contents: 'Cancel',
-					    click: (dialog) => {
-						    dialog.close();
-					    }
-				    }
-			    ]
+              }
+            },
+            {
+              contents: 'Cancel',
+              click: (dialog) => {
+                dialog.close();
+              }
+            }
+          ]
 
-		    });
+        });
 
-		    this.dialogVue(schedule);
-	    },
-	    dialogVue(schedule) {
-		    // Create a Vue inside the dialog box
-		    const teamings = this.teamings;
+        this.dialogVue(schedule);
+      },
+      editor(schedule) {
+        schedule = schedule.clone();
+        const Dialog = this.$site.Dialog;
 
-		    new this.$site.Vue({
-			    el: '#cl-schedule',
-			    data: function() {
-				    return {
-					    schedule: schedule,
-					    teamings: teamings
-				    }
-			    },
-			    template: `<editor :schedule="schedule" :teamings="teamings"></editor>`,
-			    components: {
-				    editor: ScheduleEditorVue
-			    }
-		    })
-	    },
-	    deleter(schedule) {
-		    new Dialog.MessageBox('Are you sure?', 'Are you sure you want to delete ' + schedule.name,
-			    Dialog.MessageBox.OKCANCEL, () => {
-				    this.$site.api.post('/api/scheduler/schedules/delete', {id: schedule.id})
-					    .then((response) => {
-						    if (!response.hasError()) {
-							    this.take(response);
-							    dialog.close();
-						    } else {
-							    this.$site.toast(this, response);
-						    }
+        new Dialog({
+          title: 'Edit Schedule',
+          content: '<div id="cl-schedule"></div>',
+          buttons: [
+            {
+              contents: 'Update',
+              focus: true,
+              click: (dialog) => {
+                if (!this.$site.Tags.validate(schedule.tag)) {
+                  return;
+                }
 
-					    })
-					    .catch((error) => {
-						    this.$site.toast(this, error);
-					    });
-			    });
-	    }
+                if (schedule.name.trim() === '') {
+                  new Dialog.MessageBox('Must enter name', 'You must provide a non-empty name',
+                          Dialog.MessageBox.OK);
+                  return;
+                }
+
+                let params = {
+                  id: schedule.id,
+                  tag: schedule.tag.trim(),
+                  name: schedule.name.trim(),
+                  teaming: schedule.teaming,
+                  assigntag: schedule.assigntag !== 'none' ? schedule.assigntag : null
+                }
+
+                this.$site.api.post('/api/scheduler/schedules/update', params)
+                        .then((response) => {
+                          if (!response.hasError()) {
+                            this.take(response);
+                            dialog.close();
+                          } else {
+                            this.$site.toast(this, response);
+                          }
+
+                        })
+                        .catch((error) => {
+                          this.$site.toast(this, error);
+                        });
+
+              }
+            },
+            {
+              contents: 'Cancel',
+              click: (dialog) => {
+                dialog.close();
+              }
+            }
+          ]
+
+        });
+
+        this.dialogVue(schedule);
+      },
+      dialogVue(schedule) {
+        // Create a Vue inside the dialog box
+        const teamings = this.teamings;
+
+        const user = this.$store.state.user.user;
+        const member = user.member;
+
+        const section = this.$store.getters['course/section'](member.semester, member.section);
+
+        let assignments = [];
+        for(const category of section.assignments.categories) {
+          for(const assignment of category.assignments) {
+            assignments.push(assignment);
+          }
+        }
+
+        assignments.sort(function(a, b) {
+          if(a.name < b.name) {
+            return -1;
+          } else if(a.name > b.name) {
+            return 1;
+          }
+
+          return 0;
+        });
+
+        new this.$site.Vue({
+          el: '#cl-schedule',
+          data: function () {
+            return {
+              schedule: schedule,
+              teamings: teamings,
+              assignments: assignments
+            }
+          },
+          template: `<editor :schedule="schedule" :teamings="teamings" :assignments="assignments"></editor>`,
+          components: {
+            editor: ScheduleEditorVue
+          }
+        })
+      },
+      deleter(schedule) {
+        const Dialog = this.$site.Dialog;
+
+        new Dialog.MessageBox('Are you sure?', 'Are you sure you want to delete ' + schedule.name,
+                Dialog.MessageBox.OKCANCEL, () => {
+                  this.$site.api.post('/api/scheduler/schedules/delete', {id: schedule.id})
+                          .then((response) => {
+                            if (!response.hasError()) {
+                              this.take(response);
+                              dialog.close();
+                            } else {
+                              this.$site.toast(this, response);
+                            }
+
+                          })
+                          .catch((error) => {
+                            this.$site.toast(this, error);
+                          });
+                });
+      }
     }
 
   }
