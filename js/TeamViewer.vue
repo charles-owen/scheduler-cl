@@ -4,7 +4,7 @@
             <tr><th>{{team.name}}</th></tr>
             <tr v-for="member in team.members">
                 <td v-if="schedule.assigntag === 'none'">{{member.name}}</td>
-                <td v-else><a :href="root + '/cl/console/grading/project2a-ss20/' + member.memberid">{{member.name}}</a></td>
+                <td v-else><a :href="root + '/cl/console/grading/project2a-fs20/' + member.memberid">{{member.name}}</a></td>
             </tr>
         </table>
         <p class="cl-schedule-team-email"><a :href="email">email</a></p>
