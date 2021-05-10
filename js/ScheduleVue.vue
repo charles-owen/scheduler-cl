@@ -16,6 +16,7 @@
               <a v-if="!slot.booked() && slot.time > time" @click.prevent="book(slot)">Click to Book</a>
               <span class="location">{{slot.location}}</span>
               <span v-if="staff && slot.booked()" class="counter">{{slot.count}}</span>
+              <span v-if="staff" class="check"><input v-model="slot.checked" type="checkbox"></span>
               <span v-if="slot.booked() && (staff || (owned(slot) && slot.time > time))" class="unbook"><a @click.prevent="unbook(slot)"><img :src="root + '/vendor/cl/site/img/x.png'" alt="Unbook" title="Unbook"></a>
               </span>
             </td>
@@ -77,6 +78,10 @@
         this.addMenu('Add Slot', () => {
           this.add();
         });
+
+        this.addMenu('Check Future', () => {
+          this.checkFuture()
+        })
       }
 
       this.$site.polling.addClient('scheduler', (params) => {
@@ -277,7 +282,8 @@
         this.dialogVue(slot);
       },
       editor(slot) {
-        slot = slot.clone();
+        const checked = this.checked()
+        slot = checked.length > 0 ? checked[0].clone : slot.clone();
 
         new this.$site.Dialog({
           title: 'Edit Slot',
@@ -294,18 +300,43 @@
                   return;
                 }
 
-                let params = {
-                  id: slot.id,
-                  time: slot.time,
-                  duration: slot.duration,
-                  location: slot.location
-                }
+                if(checked.length === 0) {
+                  let params = {
+                    id: slot.id,
+                    time: slot.time,
+                    duration: slot.duration,
+                    location: slot.location
+                  }
 
-                this.$site.api.post('/api/scheduler/slots/' + this.schedule.id + '/update', params)
+                  this.$site.api.post('/api/scheduler/slots/' + this.schedule.id + '/update', params)
+                      .then((response) => {
+                        if (!response.hasError()) {
+                          this.take(response);
+                          dialog.close();
+                        } else {
+                          this.$site.toast(this, response);
+                        }
+
+                      })
+                      .catch((error) => {
+                        this.$site.toast(this, error);
+                      });
+                } else {
+                  dialog.close();
+
+                  for(const slot1 of checked) {
+                    let params = {
+                      id: slot1.id,
+                      time: slot1.time,
+                      duration: slot1.duration,
+                      location: slot.location
+                    }
+
+                    this.$site.api.post('/api/scheduler/slots/' + this.schedule.id + '/update', params)
                         .then((response) => {
                           if (!response.hasError()) {
                             this.take(response);
-                            dialog.close();
+
                           } else {
                             this.$site.toast(this, response);
                           }
@@ -314,6 +345,11 @@
                         .catch((error) => {
                           this.$site.toast(this, error);
                         });
+                  }
+                }
+
+
+
 
               }
             },
@@ -327,20 +363,22 @@
 
         });
 
-        this.dialogVue(slot);
+        this.dialogVue(slot, checked.length > 0)
       },
-      dialogVue(slot) {
+      dialogVue(slot, locationOnly=false) {
         // Create a Vue inside the dialog box
+        const lo = locationOnly ? true : false
 
         new this.$site.Vue({
           el: '#cl-schedule-slot',
           site: this.$site,
           data: function () {
             return {
-              slot: slot
+              slot: slot,
+              lo: lo
             }
           },
-          template: `<editor :schedule-slot="slot"></editor>`,
+          template: `<editor :schedule-slot="slot" :location-only="lo"></editor>`,
           components: {
             editor: SlotEditorVue
           }
@@ -349,20 +387,45 @@
       deleter(slot) {
         new this.$site.Dialog.MessageBox('Are you sure?', 'Are you sure you want to delete?',
                 this.$site.Dialog.MessageBox.OKCANCEL, () => {
-                  this.$site.api.post('/api/scheduler/slots/' + this.schedule.id + '/delete', {id: slot.id})
-                          .then((response) => {
-                            if (!response.hasError()) {
-                              this.take(response);
-                              dialog.close();
-                            } else {
-                              this.$site.toast(this, response);
-                            }
-
-                          })
-                          .catch((error) => {
-                            this.$site.toast(this, error);
-                          });
+                  const checked = this.checked()
+                  if(checked.length === 0) {
+                      // Delete a single slot
+                      this.deleteSlot(slot)
+                  } else {
+                    for(const slot of checked) {
+                      this.deleteSlot(slot)
+                    }
+                  }
                 });
+      },
+      deleteSlot(slot) {
+        this.$site.api.post('/api/scheduler/slots/' + this.schedule.id + '/delete', {id: slot.id})
+            .then((response) => {
+              if (!response.hasError()) {
+                this.take(response);
+              } else {
+                this.$site.toast(this, response);
+              }
+
+            })
+            .catch((error) => {
+              this.$site.toast(this, error);
+            });
+      },
+      /**
+       * Get all checked slots
+       */
+      checked() {
+        let ret = [];
+        for(const day of this.days) {
+          for(const slot of day.slots) {
+            if(slot.checked) {
+              ret.push(slot)
+            }
+          }
+        }
+
+        return ret;
       },
       slotClass(slot) {
         return slot.booked() ? (this.owned(slot) ? 'booked owned' : 'booked') : '';
@@ -385,7 +448,7 @@
 
         });
 
-        const schedule = this.schedule;
+        const schedule = this.schedule
 
         new this.$site.Vue({
           el: '#cl-schedule-team',
@@ -401,6 +464,18 @@
           }
         })
 
+      },
+      // Check all slots that are in the future
+      checkFuture() {
+        const time = Math.floor(Date.now() / 1000)
+
+        for(const day of this.days) {
+          for(const slot of day.slots) {
+            if(slot.time > time) {
+              slot.checked = true
+            }
+          }
+        }
       },
       timeFormat(time) {
         return this.$site.TimeFormatter.absoluteUNIX(time, 'short-time');
@@ -431,6 +506,13 @@
     span.cl-info {
       font-weight: normal;
       font-size: 0.7em;
+    }
+
+    span.check {
+      position: absolute;
+      left: 4px;
+      top: 1px;
+      padding: 0;
     }
 
     table {
@@ -535,6 +617,8 @@
               height: 32px;
             }
           }
+
+
         }
 
         span.counter {

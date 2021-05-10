@@ -32,6 +32,9 @@ export const Slot = function(data) {
 	// Is this slot contiguous with the previous slot?
 	this.contiguous = false;
 
+	// Is this slot checked?
+	this.checked = false;
+
 	this.clone = function() {
 		return new Slot(this);
 	}

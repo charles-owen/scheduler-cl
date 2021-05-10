@@ -2,13 +2,15 @@
   <div class="dialog-cl-column">
     <div>
       <form>
-        <p class="flatpickr">
-          <label>Date and Time<br>
-          <flat-pickr v-model="time" :config="fpConfig" data-input></flat-pickr>
-          <a data-toggle title="Toggle Calendar"><span class="icons-cl icons-cl-calendar"></span></a>
-          </label>
-        </p>
-        <p><label>Duration (minutes): <input class="narrow" type="text" v-model="scheduleSlot.duration"></label></p>
+        <template v-if="!locationOnly">
+          <p class="flatpickr">
+            <label>Date and Time<br>
+            <flat-pickr v-model="time" :config="fpConfig" data-input></flat-pickr>
+            <a data-toggle title="Toggle Calendar"><span class="icons-cl icons-cl-calendar"></span></a>
+            </label>
+          </p>
+          <p><label>Duration (minutes): <input class="narrow" type="text" v-model="scheduleSlot.duration"></label></p>
+        </template>
         <p><label>Location<br><input type="text" v-model="scheduleSlot.location"></label></p>
         <p class="center" v-if="scheduleSlot.id === 0"><label>Repeat: <input class="narrow" type="text" v-model="scheduleSlot.repeat"></label></p>
       </form>
@@ -21,7 +23,7 @@
   import 'flatpickr/dist/flatpickr.css';
 
   export default {
-    props: ['schedule-slot'],
+    props: ['schedule-slot', 'location-only'],
     data: function () {
       return {
         time: null,

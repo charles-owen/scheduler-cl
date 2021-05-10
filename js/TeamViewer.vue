@@ -4,7 +4,7 @@
             <tr><th>{{team.name}}</th></tr>
             <tr v-for="member in team.members">
                 <td v-if="schedule.assigntag === 'none'">{{member.name}}</td>
-                <td v-else><a :href="root + '/cl/console/grading/project2a-fs20/' + member.memberid">{{member.name}}</a></td>
+                <td v-else><a :href="link + member.memberid">{{member.name}}</a></td>
             </tr>
         </table>
         <p class="cl-schedule-team-email"><a :href="email">email</a></p>
@@ -16,57 +16,61 @@
 
 <script>
 
-    export default {
-        'extends': Site.UserVueBase,
-        props: ['view-slot', 'schedule'],
-        data: function() {
-            return {
-                team: null,
-                email: 'mailto:'
-            }
-        },
-        mounted() {
-            this.site.api.get('/api/team/' + +this.viewSlot.teamId)
-                .then((response) => {
-                    if (!response.hasError()) {
-                        this.take(response.getData('team').attributes);
-                    } else {
-                        this.site.toast(this, response);
-                    }
-
-                })
-                .catch((error) => {
-                    this.site.toast(this, error);
-                });
-
-        },
-        methods: {
-            take(team) {
-                console.log(team);
-                this.team = team;
-                let first = true;
-                this.email = '';
-
-                for(const teamMember of team.members) {
-                    if(teamMember.email !== '') {
-                        if(first) {
-                            this.email = 'mailto:';
-                            first = false;
-                        } else {
-                            this.email += ';';
-                        }
-
-                        this.email += teamMember.email;
-                    }
-                }
-
-                if(this.email !== '') {
-                    const name = encodeURIComponent(team.name);
-                    this.email += '?subject=Team%20' + name;
-                }
-            }
+  export default {
+      'extends': Site.UserVueBase,
+      props: ['view-slot', 'schedule'],
+      data: function() {
+          return {
+              team: null,
+              email: 'mailto:',
+              link: null
+          }
+      },
+      mounted() {
+        if(this.schedule.assigntag !== 'none') {
+          this.link = this.root + '/cl/console/grading/' + this.schedule.assigntag + '/'
         }
-    }
+
+          this.site.api.get('/api/team/' + +this.viewSlot.teamId)
+              .then((response) => {
+                  if (!response.hasError()) {
+                      this.take(response.getData('team').attributes);
+                  } else {
+                      this.site.toast(this, response);
+                  }
+
+              })
+              .catch((error) => {
+                  this.site.toast(this, error);
+              });
+
+      },
+      methods: {
+          take(team) {
+              this.team = team;
+              let first = true;
+              this.email = '';
+
+              for(const teamMember of team.members) {
+                  if(teamMember.email !== '') {
+                      if(first) {
+                          this.email = 'mailto:';
+                          first = false;
+                      } else {
+                          this.email += ';';
+                      }
+
+                      this.email += teamMember.email;
+                  }
+              }
+
+              if(this.email !== '') {
+                  const name = encodeURIComponent(team.name);
+                  this.email += '?subject=Team%20' + name;
+              }
+          }
+      }
+  }
 
 </script>
 
