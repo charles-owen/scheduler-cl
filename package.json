@@ -9,9 +9,11 @@
   ],
   "author": "Charles B. Owen",
   "license": "MIT",
-  "devDependencies": {
-  },
   "dependencies": {
-    "course-cl": ">=0.0.1"
+    "course-cl": ">=0.0.1",
+    "flatpickr": "^4.5.1",
+    "site-cl": ">=0.0.1",
+    "vue": "^2.6.14",
+    "vue-flatpickr-component": "^8.1.6"
   }
 }
