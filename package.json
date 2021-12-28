@@ -11,9 +11,9 @@
   "license": "MIT",
   "dependencies": {
     "course-cl": ">=0.0.1",
-    "flatpickr": "^4.5.1",
+    "flatpickr": "^4.6.9",
     "site-cl": ">=0.0.1",
     "vue": "^2.6.14",
-    "vue-flatpickr-component": "^8.1.6"
+    "vue-flatpickr-component": "8.1.7"
   }
 }
