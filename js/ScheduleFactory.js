@@ -14,6 +14,8 @@ ScheduleFactory.create = function(site) {
 
  	site.ready(() => {
 	    PageVue.create('div.cl-schedule-view', 'Schedule', ScheduleVue,
-			{ nav: PageNav} );
+			{ nav: PageNav, replace: true } );
 	});
+
+	 return true
 }
