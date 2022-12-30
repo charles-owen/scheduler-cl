@@ -25,9 +25,12 @@
   </div>
 </template>
 
+
 <script>
   import {Schedule} from '../Schedule';
   import ScheduleEditorVue from './ScheduleEditor.vue';
+
+  const VueHelper = Site.VueHelper
 
   export default {
     extends: Site.ConsoleComponentBase,
@@ -223,8 +226,7 @@
           return 0;
         });
 
-        new this.$site.Vue({
-          el: '#cl-schedule',
+        const app = VueHelper.createApp({
           data: function () {
             return {
               schedule: schedule,
@@ -237,6 +239,8 @@
             editor: ScheduleEditorVue
           }
         })
+
+        app.mount('#cl-schedule')
       },
       deleter(schedule) {
         const Dialog = this.$site.Dialog;

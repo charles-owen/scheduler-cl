@@ -34,6 +34,7 @@ import SlotEditorVue from './SlotEditor.vue';
 import TeamViewerVue from './TeamViewer.vue';
 
 const Member = Site.Member;
+const VueHelper = Site.VueHelper
 
 export default {
   'extends': Site.UserVueBase,
@@ -94,7 +95,7 @@ export default {
     });
 
   },
-  destroyed() {
+  unmounted() {
     clearInterval(this.timer);
     this.timer = 0;
   },
@@ -367,9 +368,7 @@ export default {
       // Create a Vue inside the dialog box
       const lo = locationOnly ? true : false
 
-      new this.$site.Vue({
-        el: '#cl-schedule-slot',
-        site: this.$site,
+      const app = VueHelper.createApp({
         data: function () {
           return {
             slot: slot,
@@ -382,6 +381,9 @@ export default {
           editor: SlotEditorVue
         }
       })
+
+      app.config.globalProperties.$site = this.$site
+      app.mount('#cl-schedule-slot')
     },
     deleter(slot) {
       new this.$site.Dialog.MessageBox('Are you sure?', 'Are you sure you want to delete?',
@@ -449,8 +451,7 @@ export default {
 
       const schedule = this.schedule
 
-      new this.$site.Vue({
-        el: '#cl-schedule-team',
+      const app = VueHelper.createApp({
         data: function () {
           return {
             slot: slot,
@@ -464,6 +465,7 @@ export default {
         }
       })
 
+      app.mount('#cl-schedule-team')
     },
     // Check all slots that are in the future
     checkFuture() {

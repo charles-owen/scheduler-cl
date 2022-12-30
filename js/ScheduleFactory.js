@@ -13,6 +13,7 @@ export const ScheduleFactory = function() {
 ScheduleFactory.create = function(site) {
 
  	site.ready(() => {
-	    PageVue.create('div.cl-schedule-view', 'Schedule', ScheduleVue, PageNav);
+	    PageVue.create('div.cl-schedule-view', 'Schedule', ScheduleVue,
+			{ nav: PageNav} );
 	});
 }
