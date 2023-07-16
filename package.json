@@ -10,11 +10,11 @@
   "author": "Charles B. Owen",
   "license": "MIT",
   "dependencies": {
-    "@vue/compat": "^3.2.45",
+    "@vue/compat": "^3.3.4",
     "course-cl": ">=0.0.1",
     "flatpickr": "^4.6.13",
     "site-cl": ">=0.0.1",
-    "vue": "^3.2.45",
-    "vue-flatpickr-component": "11.0.1"
+    "vue": "^3.3.4",
+    "vue-flatpickr-component": "11.0.3"
   }
 }
